@@ -6,7 +6,7 @@ Dashboard internal untuk tim peretas (Red Team) mencatat dan melacak kerentanan 
 
 - **Node.js** + **Express.js** — backend dan routing
 - **EJS** — template engine
-- **SQLite** via **sql.js** — basis data in-memory (pure JavaScript, tanpa native compilation, siap Vercel)
+- **Supabase PostgreSQL** — basis data cloud permanen (data tidak hilang saat cold start)
 - **Tailwind CSS** (via CDN) — styling
 - **Vercel** — deployment
 
@@ -86,9 +86,16 @@ Pastikan semua file sudah diunggah ke repositori GitHub (akun `betzq`):
 5. Klik **Deploy**.
 6. Setelah selesai, Vercel akan memberikan tautan publik (mis. `https://petaceah.vercel.app`).
 
-### Catatan Penting (SQLite di Vercel)
+### Catatan Penting (Supabase di Vercel)
 
-Aplikasi menggunakan **sql.js** (SQLite berbasis WebAssembly, pure JavaScript) yang berjalan **in-memory**. Tidak ada native compilation yang diperlukan, sehingga deploy ke Vercel berjalan mulus. Data bersifat sementara (reset setiap cold start serverless) — cocok untuk demonstrasi portofolio. Untuk data produksi yang permanen, disarankan bermigrasi ke **Supabase PostgreSQL** (lihat bagian bawah).
+Aplikasi menggunakan **Supabase PostgreSQL** sebagai basis data cloud. Data bersifat **permanen** (tidak hilang saat cold start). Kredensial Supabase sudah di-hardcode di `server.js` sebagai fallback, namun untuk keamanan disarankan set kredensial via **Environment Variables** di Vercel Dashboard.
+
+**Set Environment Variables di Vercel:**
+1. Buka Project di Vercel → **Settings** → **Environment Variables**.
+2. Tambahkan:
+   - `SUPABASE_URL` = `https://unqsjhceoaeomnfwohvl.supabase.co`
+   - `SUPABASE_ANON_KEY` = `sb_publishable_DFdpIjykTtHXegcotYT7eg_KNXmfeFS`
+3. Klik **Save** → **Redeploy**.
 
 ## Struktur Repositori
 
@@ -105,9 +112,9 @@ Aplikasi menggunakan **sql.js** (SQLite berbasis WebAssembly, pure JavaScript) y
 └── README.md              # Dokumentasi ini
 ```
 
-## Alternatif: Supabase (PostgreSQL)
+## Supabase (Sudah Terintegrasi)
 
-Jika Anda ingin basis data permanen di Supabase, buat tabel ini di SQL Editor Supabase:
+Aplikasi sudah menggunakan **Supabase PostgreSQL**. Tabel `vulnerabilities` sudah dibuat di Supabase dengan skema berikut:
 
 ```sql
 CREATE TABLE IF NOT EXISTS vulnerabilities (
@@ -120,7 +127,7 @@ CREATE TABLE IF NOT EXISTS vulnerabilities (
 );
 ```
 
-Lalu ganti `sql.js` di `server.js` dengan klien `@supabase/supabase-js` dan sesuaikan rute CRUD. File `db/schema.sql` di atas dapat Anda gunakan sebagai referensi.
+RLS (Row Level Security) sudah diaktifkan dengan policy permissive untuk demo. File `db/schema.sql` di repo berisi skema yang sama.
 
 ## Lisensi
 
