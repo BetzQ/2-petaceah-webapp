@@ -1,0 +1,175 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>PetaCelah | Red Team Vulnerability Tracker</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Share+Tech+Mono&display=swap" rel="stylesheet" />
+  <style>
+    body {
+      font-family: "Share Tech Mono", monospace;
+      background: #0a0a0a;
+      color: #e5e5e5;
+    }
+    .hacker-border {
+      border: 1px solid #0f0;
+      box-shadow: 0 0 8px rgba(0, 255, 0, 0.15);
+    }
+    .hacker-input:focus {
+      outline: none;
+      box-shadow: 0 0 6px rgba(0, 255, 0, 0.4);
+      background: #111;
+    }
+    .btn-hack {
+      transition: all 0.15s ease;
+    }
+    .btn-hack:active {
+      transform: scale(0.96);
+    }
+    table {
+      border-collapse: separate;
+      border-spacing: 0;
+    }
+    .badge {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      text-transform: uppercase;
+    }
+    .badge-low { background: #064e3b; color: #6ee7b7; border: 1px solid #10b981; }
+    .badge-medium { background: #713f12; color: #fcd34d; border: 1px solid #f59e0b; }
+    .badge-high { background: #7f1d1d; color: #fca5a5; border: 1px solid #ef4444; }
+    .badge-critical { background: #450a0a; color: #fecaca; border: 1px solid #dc2626; text-shadow: 0 0 6px #ef4444; }
+    .status-open { color: #ef4444; }
+    .status-mitigated { color: #f59e0b; }
+    .status-closed { color: #22c55e; }
+    ::-webkit-scrollbar { width: 6px; }
+    ::-webkit-scrollbar-track { background: #0a0a0a; }
+    ::-webkit-scrollbar-thumb { background: #0f0; border-radius: 3px; }
+  </style>
+</head>
+<body class="min-h-screen antialiased">
+
+  <!-- Navbar -->
+  <nav class="border-b border-green-900 bg-black/80 backdrop-blur-md sticky top-0 z-50">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center justify-between h-16">
+        <div class="flex items-center gap-2">
+          <span class="text-green-400 font-bold text-xl tracking-wider">PETACEAH</span>
+          <span class="text-green-600 text-xs tracking-widest border border-green-800 px-2 py-0.5 rounded">RED TEAM</span>
+        </div>
+        <div class="text-xs text-green-600 tracking-wider">
+          VULNERABILITY TRACKER &bull; INTERNAL
+        </div>
+      </div>
+    </div>
+  </nav>
+
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+
+    <!-- Header + Add Form -->
+    <div class="flex flex-col lg:flex-row gap-6 items-start lg:items-center justify-between mb-8">
+      <div>
+        <h1 class="text-3xl font-bold text-green-400 tracking-wider">Dashboard Kerentanan</h1>
+        <p class="text-green-500 text-sm mt-1">Catat dan lacak temuan keamanan tim peretas</p>
+      </div>
+
+      <form action="/add" method="POST" class="flex flex-col sm:flex-row gap-3 w-full sm:w-auto bg-[#0f0f0f] hacker-border p-4 rounded">
+        <input
+          type="text"
+          name="vuln_name"
+          placeholder="Nama kerentanan (mis. SQL Injection)"
+          class="hacker-input bg-[#0a0a0a] border border-green-800 text-green-300 rounded px-3 py-2 w-full sm:w-48 focus:border-green-400"
+          required
+        />
+        <input
+          type="url"
+          name="target_url"
+          placeholder="Target URL"
+          class="hacker-input bg-[#0a0a0a] border border-green-800 text-green-300 rounded px-3 py-2 w-full sm:w-48 focus:border-green-400"
+          required
+        />
+        <select name="severity" class="hacker-input bg-[#0a0a0a] border border-green-800 text-green-300 rounded px-3 py-2 focus:border-green-400">
+          <option value="Low">Low</option>
+          <option value="Medium" selected>Medium</option>
+          <option value="High">High</option>
+          <option value="Critical">Critical</option>
+        </select>
+        <select name="status" class="hacker-input bg-[#0a0a0a] border border-green-800 text-green-300 rounded px-3 py-2 focus:border-green-400">
+          <option value="Open" selected>Open</option>
+          <option value="Mitigated">Mitigated</option>
+          <option value="Closed">Closed</option>
+        </select>
+        <button type="submit" class="btn-hack bg-green-900 border border-green-600 text-green-300 px-4 py-2 rounded hover:bg-green-800 hover:text-green-100 focus:outline-none">
+          TAMBAHKAN
+        </button>
+      </form>
+    </div>
+
+    <!-- Tabel Data -->
+    <div class="bg-[#0f0f0f] hacker-border rounded overflow-hidden">
+      <table class="w-full text-left border-b border-green-900">
+        <thead class="bg-[#111] border-b border-green-800 text-green-400 text-xs uppercase tracking-widest">
+          <tr>
+            <th class="px-4 py-3">ID</th>
+            <th class="px-4 py-3">Nama Kerentanan</th>
+            <th class="px-4 py-3">Target URL</th>
+            <th class="px-4 py-3">Severity</th>
+            <th class="px-4 py-3">Status</th>
+            <th class="px-4 py-3">Dibuat</th>
+            <th class="px-4 py-3 text-right">Aksi</th>
+          </tr>
+        </thead>
+        <tbody class="divide-y divide-green-900/50">
+          <% if (vulnerabilities && vulnerabilities.length) { %>
+            <% vulnerabilities.forEach(function(v) { %>
+              <tr class="hover:bg-[#1a1a1a] transition">
+                <td class="px-4 py-3 text-green-500"><%= v.id %></td>
+                <td class="px-4 py-3 text-green-200"><%= v.vuln_name %></td>
+                <td class="px-4 py-3 text-green-300 text-xs truncate max-w-xs"><%= v.target_url %></td>
+                <td class="px-4 py-3">
+                  <span class="badge badge-<%= v.severity.toLowerCase() %>"><%= v.severity %></span>
+                </td>
+                <td class="px-4 py-3">
+                  <span class="status-<%= v.status.toLowerCase() %>"><%= v.status %></span>
+                </td>
+                <td class="px-4 py-3 text-green-600 text-xs"><%= v.created_at %></td>
+                <td class="px-4 py-3 text-right">
+                  <!-- Update Status -->
+                  <form action="/update/<%= v.id %>" method="POST" class="inline-block">
+                    <select name="status" onchange="this.form.submit()" class="hacker-input bg-[#0a0a0a] border border-green-800 text-xs text-green-300 rounded px-2 py-1 focus:border-green-400">
+                      <option value="Open" <%= v.status === 'Open' ? 'selected' : '' %>>Open</option>
+                      <option value="Mitigated" <%= v.status === 'Mitigated' ? 'selected' : '' %>>Mitigated</option>
+                      <option value="Closed" <%= v.status === 'Closed' ? 'selected' : '' %>>Closed</option>
+                    </select>
+                  </form>
+                  <!-- Delete -->
+                  <form action="/delete/<%= v.id %>" method="POST" class="inline-block ml-1" onsubmit="return confirm('Hapus data kerentanan ini?')">
+                    <button type="submit" class="btn-hack text-xs bg-red-900/50 border border-red-800 text-red-400 px-2 py-1 rounded hover:bg-red-800/50 hover:text-red-300 focus:outline-none">HAPUS</button>
+                  </form>
+                </td>
+              </tr>
+            <% }); %>
+          <% } else { %>
+            <tr>
+              <td colspan="7" class="px-4 py-8 text-center text-green-600">Belum ada data kerentanan. Tambahkan entri pertama di atas.</td>
+            </tr>
+          <% } %>
+        </tbody>
+      </table>
+    </div>
+
+    <!-- Footer -->
+    <div class="mt-8 border-t border-green-900 pt-4 text-center">
+      <p class="text-xs text-green-700 tracking-wider">
+        PetaCelah &bull; Red Team Internal Dashboard &bull; Dibangun dengan Node.js, Express, EJS, SQLite &bull; Deploy di Vercel
+      </p>
+    </div>
+
+  </div>
+
+</body>
+</html>
