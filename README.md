@@ -6,7 +6,7 @@ Dashboard internal untuk tim peretas (Red Team) mencatat dan melacak kerentanan 
 
 - **Node.js** + **Express.js** — backend dan routing
 - **EJS** — template engine
-- **SQLite** via **better-sqlite3** — basis data file (nol konfigurasi server)
+- **SQLite** via **sql.js** — basis data in-memory (pure JavaScript, tanpa native compilation, siap Vercel)
 - **Tailwind CSS** (via CDN) — styling
 - **Vercel** — deployment
 
@@ -88,7 +88,7 @@ Pastikan semua file sudah diunggah ke repositori GitHub (akun `betzq`):
 
 ### Catatan Penting (SQLite di Vercel)
 
-Karena Vercel menggunakan serverless filesystem yang read-only kecuali `/tmp`, basis data SQLite disimpan di `/tmp` saat berjalan di Vercel. Ini cocok untuk demonstrasi portofolio. Data tidak akan permanen di antara invokasi serverless pada Vercel. Untuk data produksi yang permanen, disarankan bermigrasi ke **Supabase PostgreSQL** (lihat bagian bawah).
+Aplikasi menggunakan **sql.js** (SQLite berbasis WebAssembly, pure JavaScript) yang berjalan **in-memory**. Tidak ada native compilation yang diperlukan, sehingga deploy ke Vercel berjalan mulus. Data bersifat sementara (reset setiap cold start serverless) — cocok untuk demonstrasi portofolio. Untuk data produksi yang permanen, disarankan bermigrasi ke **Supabase PostgreSQL** (lihat bagian bawah).
 
 ## Struktur Repositori
 
@@ -120,7 +120,7 @@ CREATE TABLE IF NOT EXISTS vulnerabilities (
 );
 ```
 
-Lalu ganti `better-sqlite3` di `server.js` dengan klien `@supabase/supabase-js` dan sesuaikan rute CRUD. File `db/schema.sql` di atas dapat Anda gunakan sebagai referensi.
+Lalu ganti `sql.js` di `server.js` dengan klien `@supabase/supabase-js` dan sesuaikan rute CRUD. File `db/schema.sql` di atas dapat Anda gunakan sebagai referensi.
 
 ## Lisensi
 

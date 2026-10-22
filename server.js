@@ -1,37 +1,45 @@
 const express = require("express");
 const path = require("path");
-const fs = require("fs");
-const Database = require("better-sqlite3");
+const initSqlJs = require("sql.js");
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// ---- Konfigurasi path database SQLite ----
-// Di Vercel (serverless), hanya /tmp yang dapat ditulis.
-// Secara lokal, gunakan folder ./data agar file persist.
-const isVercel = process.env.VERCEL === "1";
-const dbDir = isVercel ? "/tmp" : path.join(__dirname, "data");
+// ---- Inisialisasi basis data SQLite (sql.js = pure JavaScript, tanpa native compilation) ----
+// sql.js berjalan di memori (in-memory). Cocok untuk demo portofolio di Vercel.
+// Data tidak persisten antar invokasi serverless (wajar untuk prototype).
+let dbPromise = null;
 
-if (!isVercel) {
-  if (!fs.existsSync(dbDir)) {
-    fs.mkdirSync(dbDir, { recursive: true });
+function getDb() {
+  if (!dbPromise) {
+    dbPromise = initSqlJs().then((SQL) => {
+      const db = new SQL.Database();
+      db.run(`
+        CREATE TABLE IF NOT EXISTS vulnerabilities (
+          id INTEGER PRIMARY KEY AUTOINCREMENT,
+          vuln_name TEXT NOT NULL,
+          target_url TEXT NOT NULL,
+          severity TEXT DEFAULT 'Medium',
+          status TEXT DEFAULT 'Open',
+          created_at DATETIME DEFAULT CURRENT_TIMESTAMP
+        );
+      `);
+      return db;
+    });
   }
+  return dbPromise;
 }
 
-const dbPath = path.join(dbDir, "vulnerabilities.db");
-const db = new Database(dbPath);
-
-// Inisialisasi schema tabel (idempoten)
-db.exec(`
-  CREATE TABLE IF NOT EXISTS vulnerabilities (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    vuln_name TEXT NOT NULL,
-    target_url TEXT NOT NULL,
-    severity TEXT DEFAULT 'Medium',
-    status TEXT DEFAULT 'Open',
-    created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-  );
-`);
+// Helper: konversi hasil sql.js (array of {columns, values}) menjadi array of object
+function rowsToObjects(result) {
+  if (!result || result.length === 0) return [];
+  const cols = result[0].columns;
+  return result[0].values.map((row) => {
+    const obj = {};
+    cols.forEach((c, i) => (obj[c] = row[i]));
+    return obj;
+  });
+}
 
 // ---- Middleware ----
 app.use(express.urlencoded({ extended: true }));
@@ -39,52 +47,60 @@ app.use(express.json());
 app.set("view engine", "ejs");
 app.set("views", path.join(__dirname, "views"));
 
+// Middleware: pastikan DB siap sebelum memproses request
+app.use(async (req, res, next) => {
+  try {
+    req.db = await getDb();
+    next();
+  } catch (err) {
+    console.error("[!] Gagal inisialisasi DB:", err);
+    res.status(500).send("Internal Server Error: DB init failed");
+  }
+});
+
 // ---- Rute ----
 
 // GET / : Dashboard dan tabel kerentanan
-app.get("/", (_req, res) => {
-  const rows = db
-    .prepare(
-      "SELECT * FROM vulnerabilities ORDER BY created_at DESC"
-    )
-    .all();
-  res.render("index", { vulnerabilities: rows });
+app.get("/", async (req, res) => {
+  const result = req.db.exec(
+    "SELECT * FROM vulnerabilities ORDER BY created_at DESC"
+  );
+  const vulnerabilities = rowsToObjects(result);
+  res.render("index", { vulnerabilities });
 });
 
 // POST /add : Simpan kerentanan baru dari form
-app.post("/add", (req, res) => {
+app.post("/add", async (req, res) => {
   const { vuln_name, target_url, severity, status } = req.body;
-  db.prepare(
-    "INSERT INTO vulnerabilities (vuln_name, target_url, severity, status) VALUES (?, ?, ?, ?)"
-  ).run(
-    vuln_name || "",
-    target_url || "",
-    severity || "Medium",
-    status || "Open"
+  req.db.run(
+    "INSERT INTO vulnerabilities (vuln_name, target_url, severity, status) VALUES (?, ?, ?, ?)",
+    [vuln_name || "", target_url || "", severity || "Medium", status || "Open"]
   );
   res.redirect("/");
 });
 
 // POST /delete/:id : Hapus kerentanan berdasarkan ID
-app.post("/delete/:id", (req, res) => {
-  db.prepare("DELETE FROM vulnerabilities WHERE id = ?").run(req.params.id);
+app.post("/delete/:id", async (req, res) => {
+  req.db.run("DELETE FROM vulnerabilities WHERE id = ?", [req.params.id]);
   res.redirect("/");
 });
 
 // POST /update/:id : Ubah status kerentanan
-app.post("/update/:id", (req, res) => {
+app.post("/update/:id", async (req, res) => {
   const { status } = req.body;
-  db.prepare("UPDATE vulnerabilities SET status = ? WHERE id = ?").run(
+  req.db.run("UPDATE vulnerabilities SET status = ? WHERE id = ?", [
     status,
-    req.params.id
-  );
+    req.params.id,
+  ]);
   res.redirect("/");
 });
 
-// ---- Jalankan server ----
+// ---- Jalankan server (lokal) ----
 if (require.main === module) {
-  app.listen(PORT, () => {
-    console.log(`[+] PetaCelah berjalan di http://localhost:${PORT}`);
+  getDb().then(() => {
+    app.listen(PORT, () => {
+      console.log(`[+] PetaCelah berjalan di http://localhost:${PORT}`);
+    });
   });
 }
 
